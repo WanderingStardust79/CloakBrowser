@@ -1,0 +1,32 @@
+name: Sync upstream
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 09:00 UTC
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://github.com/CloakHQ/CloakBrowser.git
+          git fetch upstream
+      - name: Fast-forward main from upstream
+        run: |
+          if git merge-base --is-ancestor HEAD upstream/main; then
+            git merge --ff-only upstream/main
+            git push origin main
+          else
+            echo "::warning::main has diverged from upstream/main — sync manually on mattb/main"
+            exit 0
+          fi
